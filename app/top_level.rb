@@ -1,10 +1,10 @@
 class TopLevel
-  def graph
-    $scene.graph
+  def game
+    $scene.game
   end
 
   def get path
-    result = $scene.graph
+    result = $scene.game
 
     tokens = path.split('.').map { |t| t.to_sym }
 
@@ -16,7 +16,7 @@ class TopLevel
   end
 
   def set path, key, value
-    result = $scene.graph
+    result = $scene.game
 
     tokens = path.split('.').map { |t| t.to_sym }
 
@@ -24,11 +24,11 @@ class TopLevel
       result = result[t]
     end
 
-    result[key] = value
+    result[key.to_sym] = value
   end
 
   def camera
-    $scene.graph[:camera]
+    $scene.game[:camera]
   end
 
   def add_sprite id, x, y
