@@ -6,73 +6,45 @@ class SceneZero < SKScene
   # This method is invoked when a scene is presented.
   def didMoveToView _
     @graph = {
+      device: {
+        width: device_screen_width,
+        height: device_screen_height,
+        safe_margin_left: 30,
+        safe_margin_right: 30,
+        safe_margin_top: 30,
+        safe_margin_bottom: 30
+      },
+      world: {
+        width: 300,
+        height: 1000
+      },
       camera: {
-        world_width: 300,
-        world_height: 1000,
         scale: 1,
-        children: {
-          
-        }
+        x: 0,
+        y: 0,
+        children: { }
       }
     }
 
     @sprite_pool = {}
 
-    # Set the aspect ratio.
     self.scaleMode = SKSceneScaleModeAspectFit
-
-    # Set the background color to white.
     self.backgroundColor = UIColor.whiteColor
 
-    # Add sprite (which will be updated in the render loop).
-    # Assets are located inside of the resources folder.
     add_sprite id: :first_square,
-               x: @graph[:camera][:world_width].fdiv(2),
-               y: @graph[:camera][:world_height].fdiv(2)
+               x: @graph[:world][:width].fdiv(2),
+               y: @graph[:world][:height].fdiv(2)
 
-    # @square_two = add_sprite device_screen_width.fdiv(2),
-    #                          device_screen_height.fdiv(2) - 100,
-    #                          'square.png'
 
     @camera ||= SKNode.new
-    if iPad?
-      @camera.xScale = 0.70
-      @camera.yScale = 0.70
-      @camera.position = CGPointMake(125, 40)
-    elsif iPhoneX?
-      @camera.xScale = 0.98
-      @camera.yScale = 0.98
-      @camera.position = CGPointMake(4, 45)
-    elsif iPhone6?
-      @camera.xScale = 0.88
-      @camera.yScale = 0.88
-      @camera.position = CGPointMake(40, 40)
-    elsif iPhone6Plus?
-      @camera.xScale = 0.88
-      @camera.yScale = 0.88
-      @camera.position = CGPointMake(40, 40)
-    elsif iPhone5?
-      @camera.xScale = 0.88
-      @camera.yScale = 0.88
-      @camera.position = CGPointMake(20, 15)
-    end
-
     addChild @camera
     $scene = self
   end
 
-  # This delegate is invoked when the scene receives a touch event.
-  # When this class was constructed in GameViewController. A property was
-  # set that linked this scene with the parent (being the GameViewController).
-  # Using this wireup, we are telling GameViewController to present scene three.
-  # def touchesBegan touches, withEvent: _
-  #   root.present_scene_three
-  # end
-
   def add_sprite opts
     id = opts[:id]
-    x = opts[:x] || device_screen_width.fdiv(2)
-    y = opts[:y] || device_screen_height.fdiv(2)
+    x = opts[:x] || 0
+    y = opts[:y] || 0
     @graph[:camera][:children][id] = {
       id: id,
       x: x,
@@ -80,34 +52,11 @@ class SceneZero < SKScene
     }
   end
 
-  # def add_sprite x, y, path
-  #   # Sprites are created using a texture. So first we have to create a
-  #   # texture from the png in the /resources directory.
-  #   texture = SKTexture.textureWithImageNamed path
-
-  #   # Then we can create the sprite and set it's location.
-  #   sprite = SKSpriteNode.spriteNodeWithTexture texture
-  #   sprite.position = CGPointMake x, y
-  #   addChild sprite
-  #   sprite
-  # end
-
-  # This method is invoked by SpriteKit. Generally speaking, the currentTime isn't really used.
-  # iOS devices are designed to have a fixed framerate of 60. If there is a frame rate drop. SpriteKit
-  # will attempt to catch up. There are times when the OS will decide to run your game at 30 fps. Which,
-  # again is rare. Don't get too worried about performance of framerates. Just assume that your game will
-  # run at 60 fps and do all your computation according to this framerate. The `update` method is the heart
-  # of a sprite kit scene.
-  #
-  # Oh and also. The simulator is really bad at mantaining 60 fps and shouldn't be used as an indicator
-  # to how your app will perform. You'll have to enroll in the Apple Developer program to deploy to an
-  # actual device (which costs $99 per year). If you start getting serious with your game, definitely
-  # sign up for the program and start deploying to a real device.
-  def update currentTime
+  def crud_nodes
     @graph[:camera][:children].each do |key, sprite|
       id = sprite[:id]
 
-      if !@sprite_pool[id] 
+      if !@sprite_pool[id]
         texture = SKTexture.textureWithImageNamed 'square.png'
         sprite_node = SKSpriteNode.spriteNodeWithTexture texture
         sprite_node.name = id.to_s
@@ -123,26 +72,49 @@ class SceneZero < SKScene
         @camera.removeChild sprite_node
       end
     end
+  end
 
-    # 300 = x * world_width
-    # 667 = x * world_height
-    safe_margin = 30
-    camera_scale_x = (device_screen_width - (safe_margin * 2)).fdiv(
-                       @graph[:camera][:world_width])
-    camera_scale_y = (device_screen_height - (safe_margin * 2)).fdiv(
-                       @graph[:camera][:world_height])
+  def transform_camera
+    @camera.xScale = @graph[:camera][:scale]
+    @camera.yScale = @graph[:camera][:scale]
+    @camera.position = CGPointMake(@graph[:camera][:x],
+                                   @graph[:camera][:y])
+  end
+
+  def camera_best_fit
+    camera_scale_x = (device_screen_width -
+                      (@graph[:device][:safe_margin_left] +
+                       @graph[:device][:safe_margin_right])).fdiv(@graph[:world][:width])
+
+    camera_scale_y = (device_screen_height -
+                      (@graph[:device][:safe_margin_top] +
+                       @graph[:device][:safe_margin_bottom])).fdiv(@graph[:world][:height])
+
     camera_scale = camera_scale_x
-    # puts "x: ", camera_scale_x
-    # puts "y: ", camera_scale_y
+
     if camera_scale_y < camera_scale_x
       camera_scale = camera_scale_y
     end
-    @camera.xScale = camera_scale * @graph[:camera][:scale]
-    @camera.yScale = camera_scale * @graph[:camera][:scale]
-    real_width = @graph[:camera][:world_width] * camera_scale
-    real_height = @graph[:camera][:world_height] * camera_scale
-    new_camera_x = (device_screen_width - real_width).fdiv(2)
-    new_camera_y = (device_screen_height - real_height).fdiv(2)
-    @camera.position = CGPointMake(new_camera_x, new_camera_y)
+
+    real_width = @graph[:world][:width] * camera_scale
+    real_height = @graph[:world][:height] * camera_scale
+    best_fit_x = (device_screen_width - real_width).fdiv(2)
+    best_fit_y = (device_screen_height - real_height).fdiv(2)
+
+    @graph[:camera][:best_fit] = {
+      scale: camera_scale,
+      x: best_fit_x,
+      y: best_fit_y
+    }
+
+    @graph[:camera][:scale] = @graph[:camera][:best_fit][:scale]
+    @graph[:camera][:x] = @graph[:camera][:best_fit][:x]
+    @graph[:camera][:y] = @graph[:camera][:best_fit][:y]
+  end
+
+  def update currentTime
+    camera_best_fit
+    crud_nodes
+    transform_camera
   end
 end
